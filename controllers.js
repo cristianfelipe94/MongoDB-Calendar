@@ -25,132 +25,146 @@ function errorHandler(code, type, data, message) {
     }
 }
 
-function dataTemplateCalendar(dia, actividad = "This calendar date has no description.") {
-    return new Promise((resolve, reject) => {
-        const processCalendarSchema = new CalendarDiciembre({
-            "_id": new mongoose.Types.ObjectId(),
-            "dia": dia,
-            "actividad": actividad
-        });
-        processCalendarSchema.save()
-        .then(result => {
-            console.log("Success sending calendar result: ", result);
-            resolve(processCalendarSchema);
-        })
-        .catch((err) => {console.log("Error has occured: ", err)});
-    });
-};
-
-function getAllBrands (req, res, get) {
-    const brandsJson = require('../database/brands.json');
-    Responses.SendResponse(res, brandsJson);
-}
-
-function getBrandById(req, res, get) {
-    const brandsJson = require('../database/brands.json');
-    const dataId = +get.matched[3].path;
-    const findData = brandsJson.brandData.find(element => element.id === dataId);
-    if (findData) {
-        // console.log("To be sent: ", findData);
-        return Responses.SendResponse(res, findData);
-    } else {
-        const errObject = errorHandler(400, 'Bad Request', dataId, `Brand Id: ${dataId} not found, please use a Value from 1 to ${brandsJson.brandData.length}`);
-        Responses.SendResponse(res, errObject);
-        Responses.BadRequest(res, new Error(`Brand Id: ${dataId} not found, please use a Value from 1 to ${brandsJson.brandData.length}`));
-    };
-}
-
-function checkKeys (keysArray) {
-    const expectedKeys = ['name', 'description'];
-    const response = [];
-    for (let i = 0; i < keysArray.length; i++) {
-        const outsideKey = keysArray[i];
-        const insideKey = expectedKeys[i];
-        const responseMatched = outsideKey.localeCompare(insideKey);
-        response.push(responseMatched);
-    }
-    if (response[0] === response[1]) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-function postCalendar(req, res, get) {
-    const calendarJson = require('../database/calendar.json');
-    const dataQuery = get;
-    const keyObject = Object.keys(dataQuery.query);
-    const keysChecker = checkKeys(keyObject);
-    if (!dataQuery) {
-        const errObject = errorHandler(400, 'Bad Request', dataQuery, `New data is NOT correct, please make sure you are filling all the requested information.`);
-        Responses.SendResponse(res, errObject);
-        Responses.BadRequest(res, new Error(`New data is NOT correct, please make sure you are filling all the requested information.`));
-    } else if (!dataQuery.query) {
-        const errObject = errorHandler(400, 'Bad Request', dataQuery.query, `New data is NOT correct, please submit a new data query.`);
-        Responses.SendResponse(res, errObject);
-        Responses.BadRequest(res, new Error(`New data is NOT correct, please submit a name for this brand.`));
-    } else if (!keysChecker) {
-        const errObject = errorHandler(400, 'Bad Request', dataQuery.query, `New data is NOT correct, please use the Keys: "day" or "activity" , to submit new information.`);
-        Responses.SendResponse(res, errObject);
-        Responses.BadRequest(res, new Error(`New data is NOT correct, please use the Keys: "name" or "description" , to submit new information.`));
-    } else if (dataQuery.query) {
-
-        fs.readFile('../database/calendar.json', 'utf8', (err, data) => {
-            if(err) {
-                console.log("Not able to read data: ",err);
-            } else {
-                // Use:
-                // Parse data to an Object.
-                let dataObject = JSON.parse(data);
-                let backToJson;
-
-                function promiseSchema(queryDay, queryActivity) {
-                    return new Promise((resolve, reject) => {
-                        const queryTemplate = dataTemplateCalendar(queryDay, queryActivity);
-                        console.log("Inside promise: ", queryTemplate);
-                        queryTemplate? resolve(queryTemplate) : reject("error");
-                    });
-                };
-
-                function promisedData(data) {
-                    return new Promise((resolve, reject) => {
-                        fs.writeFile('../database/calendar.json', data, 'utf8', (err) => {
-                            !err ? resolve(data) : reject("Something went wrong: ", err);
-                        });
-                    });
-                };
-
-                promiseSchema(dataQuery.query.day, dataQuery.query.activity)
-                .then((promiseSchema) => {dataObject.dataQuery.query.day.push(promiseSchema)})
-                .then(() => {backToJson = JSON.stringify(dataObject)})
-                .then(() => {promisedData(backToJson)
-                    .then((promisedData) => {Responses.SendResponse(res, promisedData)})
-                    .catch((err) => Responses.SendResponse(res, err));})
-                .catch((err) => {console.log("Schema error: ",err)});
-            }
-        })
-    };
-};
-
-function transferData (data) {
-    // console.log("To be transfer: ",data.enero);
-    data.diciembre.forEach(element => {
-        console.log("To be transfer: ",element);
-
-        function promiseSchema(queryDay, queryActivity) {
-            return new Promise((resolve, reject) => {
-                const queryTemplate = dataTemplateCalendar(queryDay, queryActivity);
-                console.log("Inside promise: ", queryTemplate);
-                queryTemplate? resolve(queryTemplate) : reject("error");
+function calendarEneroAction(dia, actividad = "This calendar date has no description.", actions, searchedId) {
+    if(actions === "getAll") {
+        return new Promise((resolve, reject) => {
+            CalendarEnero.find()
+            .exec()
+            .then(result => {
+                console.log("Success sending calendar result: ", result);
+                resolve(result);
+            })
+            .catch((err) => {
+                console.log("Error has occured: ", err);
+                resolve(result);  
             });
-        };
-
-        promiseSchema(element.dia, element.actividad).then().catch((err) => {console.log("Schema error: ",err)});
-    });
+        });
+    } else if (actions === "getId") {
+        return new Promise((resolve, reject) => {
+            CalendarEnero.findById(searchedId)
+            .exec()
+            .then(result => {
+                console.log("Success sending calendar result: ", result);
+                resolve(result);
+            })
+            .catch((err) => {
+                console.log("Error has occured: ", err);
+                resolve(result);    
+            });
+        });
+    } else if (actions === "post") {
+        return new Promise((resolve, reject) => {
+            const processCalendarSchema = new CalendarEnero({
+                "_id": new mongoose.Types.ObjectId(),
+                "dia": dia,
+                "actividad": actividad
+            });
+            processCalendarSchema.save()
+            .then(result => {
+                console.log("Success sending calendar result: ", result);
+                resolve(processCalendarSchema);
+            })
+            .catch((err) => {
+                console.log("Error has occured: ", err);
+                resolve(result);  
+            });
+        });
+    } else if (actions === "delete") {
+        return new Promise((resolve, reject) => {
+            CalendarEnero.remove({_id: searchedId})
+            .exec()
+            .then(result => {
+                console.log("Success sending calendar result: ", result);
+                resolve(result);
+            })
+            .catch((err) => {
+                console.log("Error has occured: ", err);
+                resolve(result);  
+            });
+        });
+    };
 };
 
-const calendarJson = require('../database/calendar.json');
-transferData(calendarJson);
+function getAllActivities (req, res, get) {
+    console.log("Get from controller: ", get);
+    calendarEneroAction("", "", "getAll", "");
+};
+
+function getActivityById (req, res, get) {
+    const dataQuery = get;
+    const idSearchable = dataQuery.matched[3].path;
+    calendarEneroAction("", "", "getId", `${idSearchable}`);
+};
+
+function postActivity (req, res, get) {
+    const dataQuery = get;
+    const queryDay = dataQuery.query.day;
+    const queryActivity = dataQuery.query.activity;
+    calendarEneroAction(`${queryDay}`, `${queryActivity}`, "post", "");
+};
+
+function deleteActivityById (req, res, get) {
+    const dataQuery = get;
+    const idSearchable = dataQuery.matched[3].path;
+    calendarEneroAction("", "", "delete", `${idSearchable}`);
+};
+
+
+
+
+
+
+// function postCalendar(req, res, get) {
+//     const dataQuery = get;
+//     const keyObject = Object.keys(dataQuery.query);
+//     const keysChecker = checkKeys(keyObject);
+//     if (!dataQuery) {
+//         const errObject = errorHandler(400, 'Bad Request', dataQuery, `New data is NOT correct, please make sure you are filling all the requested information.`);
+//         Responses.SendResponse(res, errObject);
+//         Responses.BadRequest(res, new Error(`New data is NOT correct, please make sure you are filling all the requested information.`));
+//     } else if (!dataQuery.query) {
+//         const errObject = errorHandler(400, 'Bad Request', dataQuery.query, `New data is NOT correct, please submit a new data query.`);
+//         Responses.SendResponse(res, errObject);
+//         Responses.BadRequest(res, new Error(`New data is NOT correct, please submit a name for this brand.`));
+//     } else if (!keysChecker) {
+//         const errObject = errorHandler(400, 'Bad Request', dataQuery.query, `New data is NOT correct, please use the Keys: "day" or "activity" , to submit new information.`);
+//         Responses.SendResponse(res, errObject);
+//         Responses.BadRequest(res, new Error(`New data is NOT correct, please use the Keys: "name" or "description" , to submit new information.`));
+//     } else if (dataQuery.query) {
+
+//         function promiseSchema(queryDay, queryActivity) {
+//             return new Promise((resolve, reject) => {
+//                 const queryTemplate = dataTemplateCalendar(queryDay, queryActivity);
+//                 console.log("Inside promise: ", queryTemplate);
+//                 queryTemplate? resolve(queryTemplate) : reject("error");
+//             });
+//         };
+
+//         promiseSchema(dataQuery.query.day, dataQuery.query.activity)
+//         .then((promiseSchema) => {console.log("Promised schema: ",promiseSchema)})
+//         .catch((err) => {console.log("Schema error: ",err)});
+//     };
+// };
+
+// function transferData (data) {
+//     // console.log("To be transfer: ",data.enero);
+//     data.diciembre.forEach(element => {
+//         console.log("To be transfer: ",element);
+
+//         function promiseSchema(queryDay, queryActivity) {
+//             return new Promise((resolve, reject) => {
+//                 const queryTemplate = dataTemplateCalendar(queryDay, queryActivity);
+//                 console.log("Inside promise: ", queryTemplate);
+//                 queryTemplate? resolve(queryTemplate) : reject("error");
+//             });
+//         };
+
+//         promiseSchema(element.dia, element.actividad).then().catch((err) => {console.log("Schema error: ",err)});
+//     });
+// };
+
+// const calendarJson = require('../database/calendar.json');
+// transferData(calendarJson);
 
 function deleteCarById(req, res, get) {
     const carsJson = require('../database/cars.json');
@@ -183,9 +197,8 @@ function deleteCarById(req, res, get) {
 }
 
 module.exports = {
-    postCalendar,
-
-    getAllBrands,
-    getBrandById,
-    deleteCarById,
+    getAllActivities,
+    getActivityById,
+    postActivity,
+    deleteActivityById
 }
