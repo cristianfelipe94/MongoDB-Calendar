@@ -9,7 +9,7 @@ class Router {
         // Get:
         // Routes from Class Constructor.
         this.routes = routes.map(currentRoute => new Route(currentRoute));
-
+        
         // Return:
         // An Array of Objects with (.method) and (.path).
         // Test:
@@ -27,7 +27,7 @@ class Router {
         // Request:
         // This request event, includes a URL path.
         const pathURL = this.req.url;
-        // console.log("Path route:",path)
+        // console.log("Path route:",pathURL)
         
         // Request:
         // This request event, includes a Method GET or POST.

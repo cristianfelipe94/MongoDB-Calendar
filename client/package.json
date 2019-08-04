@@ -1,0 +1,14 @@
+{
+  "name": "client",
+  "version": "1.0.0",
+  "description": "This is a package.json client side",
+  "main": "index.html",
+  "scripts": {
+    "client": "nodemon client.js"
+  },
+  "author": "Felipe",
+  "license": "MIT",
+  "dependencies": {
+    "nodemon": "^1.19.1"
+  }
+}

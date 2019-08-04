@@ -89,6 +89,7 @@ class Route {
             return matched = true;
           // Third check if Request-Path-Status is equal to Class-Path-Status.
         } else if (paths.length === this.pathStatus.length) {
+
             // Fourth map throw an array an compare Class-Path (current) to Request-Path (path[index]).
             matched = this.pathStatus.map((current, index) => {
                 if (current.path === paths[index].path) {
